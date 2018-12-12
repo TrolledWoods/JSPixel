@@ -9,6 +9,10 @@ class Camera {
         return new Camera(Screen.FromID(id), x, y, scale);
     }
 
+    static FromScreen(screen, x, y, scale){
+        return new Camera(screen, x, y, scale);
+    }
+
     WorldToScreen(world_x, world_y){
         return {
             x: (world_x - this.pos.x) * this.scale + this.screen.width/2,
@@ -28,5 +32,9 @@ class Camera {
     DrawRect(x, y, width, height, color){
         let pos = this.WorldToScreen(x, y);
         this.screen.DrawRect(pos.x, pos.y, width*this.scale, height*this.scale, color);
+    }
+    DrawTexture(texture, x, y, width, height){
+        let pos = this.WorldToScreen(x, y);
+        this.screen.DrawTexture(texture, pos.x, pos.y, width*this.scale, height*this.scale);
     }
 }

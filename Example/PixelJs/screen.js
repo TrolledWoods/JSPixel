@@ -8,6 +8,10 @@ class Screen {
 		return new Screen(document.getElementById(id));
 	}
 
+	GetSection(x, y, width, height){
+		return new PartialScreen(this.canvas, x, y, x + width, y + height);
+	}
+
 	Clear(color){
 		this.context.fillStyle = color;
 		this.context.fillRect(this.drawing_offset.x, this.drawing_offset.y, this.width, this.height);
@@ -30,6 +34,9 @@ class Screen {
 	}
 
 	DrawTexture(texture, x, y, width, height) {
+		x += this.drawing_offset.x;
+		y += this.drawing_offset.y;
+
 		// Set default values for with and height if they are not defined
 		if(!width) width = texture.width;
 		if(!height) height = texture.height;
@@ -123,5 +130,49 @@ class Screen {
 		this.drawing_offset = { x: 0, y: 0 };
 		this.canvas = target;
 		this.context = target.getContext("2d");
+	}
+}
+
+class PartialScreen extends Screen {
+	constructor(canvas, left, top, right, bottom) {
+		super(canvas);
+
+		this.drawing_offset.x = left;
+		this.drawing_offset.y = top;
+		this.width = right - left;
+		this.height = bottom - top;
+	}
+
+	DrawRect(x, y, width, height, color = "red"){
+		let left   = this.ClampX(x);
+		let right  = this.ClampX(x + width);
+		let top    = this.ClampY(y);
+		let bottom = this.ClampY(y + height);
+
+		if(left >= right || top >= bottom) return;
+
+		super.DrawRect(left, top, right - left, bottom - top, color);
+	}
+	DrawTexture(texture, x, y, width, height){
+		if(!width) width = texture.width;
+		if(!height) height = texture.height;
+		
+		let left   = this.ClampX(x) + this.drawing_offset.x;
+		let right  = this.ClampX(x + width) + this.drawing_offset.x;
+		let top    = this.ClampY(y) + this.drawing_offset.y;
+		let bottom = this.ClampY(y + height) + this.drawing_offset.y;
+
+		if(left >= right || top >= bottom) return;
+
+		this.context.drawImage(texture.img, 
+							texture.crop_x + (left - x - this.drawing_offset.x) * (texture.width / width), texture.crop_y + (top - y - this.drawing_offset.y) * (texture.width / width), 
+							(right - left) * (texture.width / width), (bottom - top) * (texture.height / height),
+							left, top, right - left, bottom - top);
+	}
+	ClampX(x){
+		return Math.max(Math.min(x, this.width - 1), 1);
+	}
+	ClampY(y){
+		return Math.max(Math.min(y, this.height - 1), 1);
 	}
 }
