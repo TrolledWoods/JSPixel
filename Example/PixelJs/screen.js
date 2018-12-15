@@ -71,9 +71,10 @@ class Screen {
 	}
 
 	DrawText(args) {
-		if("font"  in args) this.context.font      = args.font;
-		if("color" in args) this.context.fillStyle = args.color;
+		this.context.font      = "font"  in args ? args.font  : "Arial 12px";
+		this.context.fillStyle = "color" in args ? args.color : "white";
 		this.context.fillText(args.text, args.x + this.drawing_offset.x, args.y + this.drawing_offset.y);
+		
 
 		return this;
 	}
@@ -86,7 +87,7 @@ class Screen {
 	}
 
 	DrawDrawingSequence(args){
-		let queue = args.drawing_sequence.queue;
+		let queue = args.sequence.queue;
 
 		for(let element of queue){
 			this[element.name](element.args);
@@ -217,8 +218,13 @@ class PartialScreen extends Screen {
 }
 
 class DrawingSequence {
-	constructor(){
-		this.queue = [];
+	constructor(width, height, queue = []){
+		this.width = width;
+		this.height = height;
+		this.queue = queue;
+	}
+	Clone() {
+		return new DrawingSequence(this.width, this.height, this.queue);
 	}
 	_queue_func(name, args){
 		this.queue.push({

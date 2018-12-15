@@ -1,8 +1,8 @@
 class Camera {
-    constructor(screen, x, y, scale){
+    constructor(screen, x, y, zoom){
         this.screen = screen;
         this.pos = { x: x, y: y };
-        this.scale = scale;
+        this.zoom = zoom;
     }
 
     static FromID(args){
@@ -10,7 +10,7 @@ class Camera {
             Screen.FromID(args.id), 
             "x" in args ? args.x : 0,
             "y" in args ? args.y : 0,
-            "scale" in args ? args.scale : 1
+            "scale" in args ? args.zoom : 1
         );
     }
 
@@ -19,21 +19,21 @@ class Camera {
             args.screen,
             "x" in args ? args.x : 0,
             "y" in args ? args.y : 0,
-            "scale" in args ? args.scale : 1
+            "scale" in args ? args.zoom : 1
         );
     }
 
     WorldToScreen(world_pos){
         return {
-            x: (world_pos.x - this.pos.x) * this.scale + this.screen.width/2,
-            y: (-(world_pos.y - this.pos.y) * this.scale + this.screen.height/2)
+            x: (world_pos.x - this.pos.x) * this.zoom + this.screen.width/2,
+            y: (-(world_pos.y - this.pos.y) * this.zoom + this.screen.height/2)
         };
     }
 
     ScreenToWorld(screen_pos){
         return {
-            x: (screen_pos.x - this.screen.width/2) / this.scale + this.pos.x,
-            y: -(screen_pos.y - this.screen.height/2) / this.scale + this.pos.y
+            x: (screen_pos.x - this.screen.width/2) / this.zoom + this.pos.x,
+            y: -(screen_pos.y - this.screen.height/2) / this.zoom + this.pos.y
         };
     }
     Clear(args){
@@ -43,8 +43,8 @@ class Camera {
     }
     DrawRect(args){
         let pos = this.WorldToScreen({ x: args.x, y: args.y});
-        let width = args.width * this.scale;
-        let height = args.height * this.scale;
+        let width = args.width * this.zoom;
+        let height = args.height * this.zoom;
         this.screen.DrawRect({ 
             x: pos.x - width / 2, 
             y: pos.y - height / 2, 
@@ -55,8 +55,8 @@ class Camera {
     }
     DrawGraphic(args){
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
-        let width  = args.width  * this.scale;
-        let height = args.height * this.scale;
+        let width  = args.width  * this.zoom;
+        let height = args.height * this.zoom;
         this.screen.DrawGraphic({
             graphic: args.graphic,
             x: pos.x, y: pos.y,
@@ -65,8 +65,8 @@ class Camera {
     }
     DrawTexture(args){
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
-        let width  = args.width  * this.scale;
-        let height = args.height * this.scale;
+        let width  = args.width  * this.zoom;
+        let height = args.height * this.zoom;
         this.screen.DrawTexture({
             texture: args.texture,
             x: pos.x, y: pos.y,
@@ -77,8 +77,8 @@ class Camera {
     }
     DrawAnimation(args){
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
-        let width  = args.width  * this.scale;
-        let height = args.height * this.scale;
+        let width  = args.width  * this.zoom;
+        let height = args.height * this.zoom;
         this.screen.DrawTexture({
             animation: args.animation,
             x: pos.x, y: pos.y,
@@ -89,8 +89,8 @@ class Camera {
     }
     DrawAnimationController(args){
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
-        let width  = args.width  * this.scale;
-        let height = args.height * this.scale;
+        let width  = args.width  * this.zoom;
+        let height = args.height * this.zoom;
         this.screen.DrawTexture({
             controller: args.controller,
             x: pos.x, y: pos.y,
@@ -109,30 +109,30 @@ class Camera {
 		return this;
 	}
     DrawTilemap(args){
-        let dl = args.tilemap.WorldToTilemap(this.ScreenToWorld({ x: 0, y: this.screen.height }));
-        let ur = args.tilemap.WorldToTilemap(this.ScreenToWorld({
-            x: this.screen.width, y: 0 }));
-        let scale = Math.floor(this.scale * args.tilemap.tile_scale);
+        let size = this.zoom * args.tilemap.tile_scale;
+        let middle = args.tilemap.WorldToTilemap(this.ScreenToWorld({x:this.screen.width/2,y:this.screen.height/2}));
+        let width = Math.ceil(this.screen.width / (2 * size));
+        let height = Math.ceil(this.screen.height / (2 * size));
+        let dl = { x: middle.x - width, y: middle.y - height };
+        let ur = { x: middle.x + width, y: middle.y + height };
 
-        let origin = this.WorldToScreen(args.tilemap.TilemapToWorld({ x: Math.floor(dl.x), y: Math.floor(ur.y) }));
-        origin.x = Math.floor(origin.x);
-        origin.y = Math.floor(origin.y);
-        let pos_x = origin.x;
-        for(let x = Math.floor(dl.x - 1); x <= Math.ceil(ur.x - 1); x++){
-            let pos_y = origin.y;
-            for(let y = Math.floor(dl.y - 1); y <= Math.ceil(ur.y - 1); y++){
+        let origin = this.WorldToScreen(args.tilemap.TilemapToWorld({ x: Math.floor(dl.x), y: Math.floor(dl.y) }));
+        let pos_x = Math.floor(origin.x);
+        for(let x = Math.floor(dl.x); x <= Math.ceil(ur.x); x++){
+            let pos_y = Math.floor(origin.y);
+            for(let y = Math.floor(dl.y); y <= Math.ceil(ur.y); y++){
                 args.DrawTile({
                     screen: this.screen, 
                     tile: args.tilemap.GetTile({ x: x, y: y }), 
                     tile_pos: { x: x, y: y },
-                    pos: { x: pos_x - scale / 2, y: pos_y - scale / 2 },
-                    scale: scale,
-                    width: scale,
-                    height: scale
+                    pos: { x: pos_x - size / 2, y: pos_y - size / 2 },
+                    size: size + 1,
+                    width: size + 1,
+                    height: size + 1
                 });
-                pos_y += scale;
+                pos_y -= size;
             }
-            pos_x += scale;
+            pos_x += size;
         }
 
         return this;

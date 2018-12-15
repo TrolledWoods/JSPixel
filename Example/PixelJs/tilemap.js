@@ -25,14 +25,14 @@ class Tilemap {
     // The map function defaults to no mapping at all
     // If the list is not defined, it will default to null(The mapfunction is used solely for the creation)
     // Mapfunction arguments: pos, tile
-    static FromList(args){
+    static Create(args){
         let min_x = "min_x" in args ? args.min_x : 0;
         let min_y = "min_y" in args ? args.min_y : 0;
         let height = "height" in args ? args.height : 
-                     ("max_y" in args ? args.max_y - min_y : 
+                     ("max_y" in args ? args.max_y - min_y + 1 : 
                      args.tiles.length);
         let width  = "width"  in args ? args.width : 
-                     ("max_x" in args ? args.max_x - min_x : 
+                     ("max_x" in args ? args.max_x - min_x + 1 : 
                      args.tiles[0].length);
 
         let two_dimensional = !("width" in args) && !("max_x" in args);
@@ -40,28 +40,30 @@ class Tilemap {
         let tiles_inside = "tiles" in args;
         let mapped_tiles = [];
         let tile_i = 0;
-        for(let y = 0; y < height; y++){
+        for(let y = height - 1; y >= 0; y--){
             for(let x = 0; x < width; x++){
                 mapped_tiles.push(mapping_func({
                     tile: tiles_inside ? (two_dimensional ? args.tiles[y][x] : args.tiles[tile_i]) : null,
-                    pos: { x: x, y: y }
+                    pos: { x: x + min_x, y: height - y + min_y - 1 }
                 }));
                 tile_i++;
             }
         }
 
-        return new Tilemap(mapped_tiles, min_x, min_y, width, height);
+        let tilemap = new Tilemap(mapped_tiles, min_x, min_y, width, height);
+        if("tile_scale" in args) tilemap.tile_scale = args.tile_scale;
+        return tilemap;
     }
     WorldToTilemap(world_pos){
         return {
-            x: (world_pos.x - this.x) / this.tile_scale,
-            y: (world_pos.y - this.y) / this.tile_scale
+            x: (world_pos.x) / this.tile_scale,
+            y: (world_pos.y) / this.tile_scale
         };
     }
     TilemapToWorld(tilemap_pos){
         return {
-            x: tilemap_pos.x * this.tile_scale + this.x,
-            y: tilemap_pos.y * this.tile_scale + this.y
+            x: tilemap_pos.x * this.tile_scale,
+            y: tilemap_pos.y * this.tile_scale
         };
     }
     IsInside(args){
