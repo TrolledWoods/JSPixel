@@ -12,47 +12,49 @@ class Screen {
 		return new PartialScreen(this.canvas, x, y, x + width, y + height);
 	}
 
-	Clear(color){
-		this.context.fillStyle = color;
+	Clear(args){
+		this.context.fillStyle = args.color;
 		this.context.fillRect(this.drawing_offset.x, this.drawing_offset.y, this.width, this.height);
 	}
 
-	DrawGraphic(graphic, x, y, width, height){
-		if(!graphic) return this;
+	DrawGraphic(args){
+		if(!"graphic" in args) console.error("DrawGraphic requires a 'graphic' argument");
+		if(!args.graphic) return this;
 		// Find the appropriate function for the task
-		switch(graphic.constructor.name){
+		switch(args.graphic.constructor.name){
 			case "Texture":
-				return this.DrawTexture(graphic, x, y, width, height);
+				args.texture    = args.graphic;
+				return this.DrawTexture(args);
 			case "Animation":
-				return this.DrawAnimation(graphic, x, y, width, height);
+				args.animation  = args.graphic;
+				return this.DrawAnimation(args);
 			case "AnimationController":
-				return this.DrawAnimationController(graphic, x, y, width, height);
+				args.controller = args.graphic;
+				return this.DrawAnimationController(args);
 		}
 	}
 
-	DrawTexture(texture, x, y, width, height) {
-		x += this.drawing_offset.x;
-		y += this.drawing_offset.y;
+	DrawTexture(args) {
+		let y = args.x + this.drawing_offset.x;
+		let x = args.y + this.drawing_offset.y;
 
-		// Set default values for with and height if they are not defined
-		if(!width) width = texture.width;
-		if(!height) height = texture.height;
+		let width  = "width"  in args ? args.width  : args.texture.width;
+		let height = "height" in args ? args.height : args.texture.height;
 		
 		// Draw the texture
-		return this.context.drawImage(texture.img, 
-									  texture.crop_x, texture.crop_y, texture.width, texture.height,
+		return this.context.drawImage(args.texture.img, 
+									  args.texture.crop_x, args.texture.crop_y, 
+									  args.texture.width, args.texture.height,
 									  x, y, width, height);
 	}
 
-	DrawAnimation(animation, x, y, width, height){
-		x += this.drawing_offset.x;
-		y += this.drawing_offset.y;
+	DrawAnimation(args){
+		x = args.x + this.drawing_offset.x;
+		y = args.y + this.drawing_offset.y;
 	
-		let frame = animation.GetCurrentFrame();
-		
-		// Default values for width and height
-		if (!width) width = frame.width;
-		if (!height) height = frame.height;
+		let frame = args.animation.GetCurrentFrame();
+		let width  = "width"  in args ? args.width  : frame.width;
+		let height = "height" in args ? args.height : frame.height;
 		
 		// Draw the animation
 		return this.context.drawImage(frame.img,
@@ -60,31 +62,43 @@ class Screen {
 									 x, y, width, height);
 	}
 
-	DrawAnimationController(controller, x, y, width, height){
-		if(controller.current_animation !== null)
-			return this.DrawAnimation(controller.current_animation, x, y, width, height);
+	DrawAnimationController(args){
+		if(args.controller.current_animation !== null){
+			args.animation = args.controller.current_animation;
+			return this.DrawAnimation(args);
+		}
 		return this;
 	}
 
-	DrawText(text, x, y, font, color) {
-		this.context.font = font;
-		this.context.fillStyle = color;
-		this.context.fillText(text, x + this.drawing_offset.x, y + this.drawing_offset.y);
+	DrawText(args) {
+		if("font"  in args) this.context.font      = args.font;
+		if("color" in args) this.context.fillStyle = args.color;
+		this.context.fillText(args.text, args.x + this.drawing_offset.x, args.y + this.drawing_offset.y);
 
 		return this;
 	}
 
-	DrawRect(x, y, width, height, color){
-		this.context.fillStyle = color;
-		this.context.fillRect(x + this.drawing_offset.x, y + this.drawing_offset.y, width, height);
+	DrawRect(args){
+		this.context.fillStyle = ("color" in args) ? args.color : "red";
+		this.context.fillRect(args.x + this.drawing_offset.x, args.y + this.drawing_offset.y, args.width, args.height);
 	
 		return this;
 	}
 
-	DrawCircle(x, y, r, color){
-		this.context.fillStyle = color;
+	DrawDrawingSequence(args){
+		let queue = args.drawing_sequence.queue;
+
+		for(let element of queue){
+			this[element.name](element.args);
+		}
+
+		return this;
+	}
+
+	DrawCircle(args){
+		this.context.fillStyle = "color" in args ? args.color : "red";
 		this.context.beginPath();
-		this.context.arc(x + this.drawing_offset.x, y + this.drawing_offset.y, r, 0, Math.PI * 2);
+		this.context.arc(args.x + this.drawing_offset.x, args.y + this.drawing_offset.y, args.radius, 0, Math.PI * 2);
 		this.context.fill();
 
 		return this;
@@ -121,7 +135,7 @@ class Screen {
 		this.canvas.width = target.width;
 		this.canvas.height = target.height;
 		this.context = this.canvas.getContext("2d");
-		this.DrawTexture(target, 0, 0);
+		this.DrawTexture({ texture: target, x: 0, y: 0 });
 		target.img = this.canvas;
 
 		return this;
@@ -148,20 +162,30 @@ class PartialScreen extends Screen {
 		this.height = bottom - top;
 	}
 
-	DrawRect(x, y, width, height, color = "red"){
-		let left   = this.ClampX(x);
-		let right  = this.ClampX(x + width);
-		let top    = this.ClampY(y);
-		let bottom = this.ClampY(y + height);
+	DrawRect(args){
+		let left   = this.ClampX(args.x);
+		let right  = this.ClampX(args.x + args.width);
+		let top    = this.ClampY(args.y);
+		let bottom = this.ClampY(args.y + args.height);
 
 		if(left >= right || top >= bottom) return this;
 
-		super.DrawRect(left, top, right - left, bottom - top, color);
+		let drawingArgs = { x: left, y: top, width: right - left, height: bottom - top };
+		if("color" in args) drawingArgs.color = args.color;  
+		super.DrawRect(drawingArgs);
 
 		return this;
 	}
-	DrawAnimation(animation, x, y, width, height){
-		this.DrawTexture(animation.GetCurrentFrame(), x, y, width, height);
+	DrawAnimation(args){
+		let drawingArgs = {
+			x: args.x,
+			y: args.y,
+			texture: args.animation.GetCurrentFrame()
+		};
+		if("width"  in args) drawingArgs.width  = args.width;
+		if("height" in args) drawingArgs.height = args.height; 
+		this.DrawTexture(drawingArgs);
+
 		return this;
 	}
 	DrawTexture(texture, x, y, width, height){
@@ -176,7 +200,8 @@ class PartialScreen extends Screen {
 		if(left >= right || top >= bottom) return this;
 
 		this.context.drawImage(texture.img, 
-							texture.crop_x + (left - x - this.drawing_offset.x) * (texture.width / width), texture.crop_y + (top - y - this.drawing_offset.y) * (texture.width / width), 
+							texture.crop_x + (left - x - this.drawing_offset.x) * (texture.width / width), 
+							texture.crop_y + (top - y - this.drawing_offset.y) * (texture.width / width), 
 							(right - left) * (texture.width / width), (bottom - top) * (texture.height / height),
 							left, top, right - left, bottom - top);
 
@@ -188,4 +213,26 @@ class PartialScreen extends Screen {
 	ClampY(y){
 		return Math.max(Math.min(y, this.height), 0);
 	}
+}
+
+class DrawingSequence {
+	constructor(){
+		this.queue = [];
+	}
+	QueueFunc(name, args){
+		this.queue.push({
+			name: name,
+			args: args
+		});
+	}
+	Clear(args){
+		this.queue = [];
+		this.QueueFunc("Clear", args);
+	}
+	DrawTexture             (args){ this.QueueFunc("DrawTexture",             args); }
+	DrawAnimation           (args){ this.QueueFunc("DrawAnimation",           args); }
+	DrawAnimationController (args){ this.QueueFunc("DrawAnimationController", args); }
+	DrawRect                (args){ this.QueueFunc("DrawRect",                args); }
+	DrawText                (args){ this.QueueFunc("DrawText",                args); }
+	DrawCircle              (args){ this.QueueFunc("DrawCircle",              args); }
 }

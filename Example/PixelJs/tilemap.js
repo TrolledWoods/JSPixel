@@ -20,15 +20,37 @@ class Tilemap {
         
         return new Tilemap(tiles, min_x, min_y, width, height);
     }
-    static ParseList(list, min_x, min_y, max_x, max_y, map_func){
-        let width  = max_x - min_x + 1;
-        let height = max_y - min_y + 1;
+    // If the max points are not set, then it will assume the list is two dimensional
+    // The min points default to zero
+    // The map function defaults to no mapping at all
+    // If the list is not defined, it will default to null(The mapfunction is used solely for the creation)
+    // Mapfunction arguments: pos, tile
+    static FromList(args){
+        let min_x = "min_x" in args ? args.min_x : 0;
+        let min_y = "min_y" in args ? args.min_y : 0;
+        let height = "height" in args ? args.height : 
+                     ("max_y" in args ? args.max_y - min_y : 
+                     args.tiles.length);
+        let width  = "width"  in args ? args.width : 
+                     ("max_x" in args ? args.max_x - min_x : 
+                     args.tiles[0].length);
 
-        let tiles = [];
-        for(let i = 0; i < list.length; i++){
-            tiles.push(map_func(list[i]));
+        let two_dimensional = !("width" in args) && !("max_x" in args);
+        let mapping_func = "MappingFunc" in args ? args.MappingFunc : (args) => args.tile;
+        let tiles_inside = "tiles" in args;
+        let mapped_tiles = [];
+        let tile_i = 0;
+        for(let y = 0; y < height; y++){
+            for(let x = 0; x < width; x++){
+                mapped_tiles.push(mapping_func({
+                    tile: tiles_inside ? (two_dimensional ? args.tiles[y][x] : args.tiles[tile_i]) : null,
+                    pos: { x: x, y: y }
+                }));
+                tile_i++;
+            }
         }
-        return new Tilemap(tiles, min_x, min_y, width, height);
+
+        return new Tilemap(mapped_tiles, min_x, min_y, width, height);
     }
     WorldToTilemap(world_pos){
         return {
@@ -42,23 +64,23 @@ class Tilemap {
             y: tilemap_pos.y * this.tile_scale + this.y
         };
     }
-    IsInside(x, y){
-        return x>=this.x && x<this.x+this.width &&
-               y>=this.y && y<this.y+this.height;
+    IsInside(args){
+        return args.x>=this.x && args.x<this.x+this.width &&
+               args.y>=this.y && args.y<this.y+this.height;
     }
-    GetIndex(x, y){
-        if(!this.IsInside(x, y)) return -1;
+    GetIndex(args){
+        if(!this.IsInside(args)) return -1;
 
-        return  (x-this.x) + (y-this.y) * this.height;
+        return  (args.x-this.x) + (args.y-this.y) * this.width;
     }
-    GetTile(x, y){
-        let index = this.GetIndex(x, y);
+    GetTile(args){
+        let index = this.GetIndex(args);
         if(index < 0) return null;
 
         return this.tiles[index];
     }
-    SetTile(x, y, tile){
-        let index = this.GetIndex(x, y);
+    SetTile(args){
+        let index = this.GetIndex(args);
         if(index < 0) return this;
 
         this.tiles[index] = tile;
