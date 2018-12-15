@@ -26,14 +26,14 @@ class Camera {
     WorldToScreen(world_pos){
         return {
             x: (world_pos.x - this.pos.x) * this.scale + this.screen.width/2,
-            y: (world_pos.y - this.pos.y) * this.scale + this.screen.height/2
+            y: (-(world_pos.y - this.pos.y) * this.scale + this.screen.height/2)
         };
     }
 
     ScreenToWorld(screen_pos){
         return {
             x: (screen_pos.x - this.screen.width/2) / this.scale + this.pos.x,
-            y: (screen_pos.y - this.screen.height/2) / this.scale + this.pos.y
+            y: -(screen_pos.y - this.screen.height/2) / this.scale + this.pos.y
         };
     }
     Clear(args){
@@ -109,18 +109,18 @@ class Camera {
 		return this;
 	}
     DrawTilemap(args){
-        let ul = args.tilemap.WorldToTilemap(this.ScreenToWorld({ x: 0, y: 0}));
-        let dr = args.tilemap.WorldToTilemap(this.ScreenToWorld({
-            x: this.screen.width, y: this.screen.height }));
+        let dl = args.tilemap.WorldToTilemap(this.ScreenToWorld({ x: 0, y: this.screen.height }));
+        let ur = args.tilemap.WorldToTilemap(this.ScreenToWorld({
+            x: this.screen.width, y: 0 }));
         let scale = Math.floor(this.scale * args.tilemap.tile_scale);
 
-        let origin = this.WorldToScreen(args.tilemap.TilemapToWorld({ x: Math.floor(ul.x), y: Math.floor(ul.y) }));
+        let origin = this.WorldToScreen(args.tilemap.TilemapToWorld({ x: Math.floor(dl.x), y: Math.floor(ur.y) }));
         origin.x = Math.floor(origin.x);
         origin.y = Math.floor(origin.y);
         let pos_x = origin.x;
-        for(let x = Math.floor(ul.x - 1); x <= Math.ceil(dr.x - 1); x++){
+        for(let x = Math.floor(dl.x - 1); x <= Math.ceil(ur.x - 1); x++){
             let pos_y = origin.y;
-            for(let y = Math.floor(ul.y - 1); y <= Math.ceil(dr.y - 1); y++){
+            for(let y = Math.floor(dl.y - 1); y <= Math.ceil(ur.y - 1); y++){
                 args.DrawTile({
                     screen: this.screen, 
                     tile: args.tilemap.GetTile({ x: x, y: y }), 

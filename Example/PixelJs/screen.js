@@ -104,14 +104,14 @@ class Screen {
 		return this;
 	}
 
-	DrawLine(x1, y1, x2, y2, color){
+	DrawLine(args){
 		// Set up the path
 		this.context.beginPath();
-		this.context.moveTo(x1 + this.drawing_offset.x, y1 + this.drawing_offset.y);
-		this.context.lineTo(x2 + this.drawing_offset.x, y2 + this.drawing_offset.y);
+		this.context.moveTo(args.x1 + this.drawing_offset.x, args.y1 + this.drawing_offset.y);
+		this.context.lineTo(args.x2 + this.drawing_offset.x, args.y2 + this.drawing_offset.y);
 		
 		// Draw the line
-		this.context.strokeStyle = color;
+		this.context.strokeStyle = "color" in args ? args.color : "black";
 		this.context.stroke();
 
 		return this;
@@ -188,21 +188,22 @@ class PartialScreen extends Screen {
 
 		return this;
 	}
-	DrawTexture(texture, x, y, width, height){
-		if(!width) width = texture.width;
-		if(!height) height = texture.height;
+	DrawTexture(args){
+		let width  = "width"  in args ? args.width  : texture.width;
+		let height = "height" in args ? args.height : texture.height;
 		
-		let left   = this.ClampX(x) + this.drawing_offset.x;
-		let right  = this.ClampX(x + width) + this.drawing_offset.x;
-		let top    = this.ClampY(y) + this.drawing_offset.y;
-		let bottom = this.ClampY(y + height) + this.drawing_offset.y;
+		let left   = this.ClampX(args.x) + this.drawing_offset.x;
+		let right  = this.ClampX(args.x + width) + this.drawing_offset.x;
+		let top    = this.ClampY(args.y) + this.drawing_offset.y;
+		let bottom = this.ClampY(args.y + height) + this.drawing_offset.y;
 
 		if(left >= right || top >= bottom) return this;
 
-		this.context.drawImage(texture.img, 
-							texture.crop_x + (left - x - this.drawing_offset.x) * (texture.width / width), 
-							texture.crop_y + (top - y - this.drawing_offset.y) * (texture.width / width), 
-							(right - left) * (texture.width / width), (bottom - top) * (texture.height / height),
+		this.context.drawImage(args.texture.img, 
+			args.texture.crop_x + (left - args.x - this.drawing_offset.x) * (args.texture.width / width), 
+			args.texture.crop_y + (top - args.y - this.drawing_offset.y) * (args.texture.width / width), 
+							(right - left) * (args.texture.width / args.width), 
+							(bottom - top) * (args.texture.height / args.height),
 							left, top, right - left, bottom - top);
 
 		return this;
@@ -219,7 +220,7 @@ class DrawingSequence {
 	constructor(){
 		this.queue = [];
 	}
-	QueueFunc(name, args){
+	_queue_func(name, args){
 		this.queue.push({
 			name: name,
 			args: args
@@ -227,12 +228,13 @@ class DrawingSequence {
 	}
 	Clear(args){
 		this.queue = [];
-		this.QueueFunc("Clear", args);
+		this._queue_func("Clear", args);
 	}
-	DrawTexture             (args){ this.QueueFunc("DrawTexture",             args); }
-	DrawAnimation           (args){ this.QueueFunc("DrawAnimation",           args); }
-	DrawAnimationController (args){ this.QueueFunc("DrawAnimationController", args); }
-	DrawRect                (args){ this.QueueFunc("DrawRect",                args); }
-	DrawText                (args){ this.QueueFunc("DrawText",                args); }
-	DrawCircle              (args){ this.QueueFunc("DrawCircle",              args); }
+	DrawTexture             (args){ this._queue_func("DrawTexture",             args); }
+	DrawAnimation           (args){ this._queue_func("DrawAnimation",           args); }
+	DrawAnimationController (args){ this._queue_func("DrawAnimationController", args); }
+	DrawRect                (args){ this._queue_func("DrawRect",                args); }
+	DrawText                (args){ this._queue_func("DrawText",                args); }
+	DrawCircle              (args){ this._queue_func("DrawCircle",              args); }
+	DrawLine                (args){ this._queue_func("DrawLine",                args); }
 }
