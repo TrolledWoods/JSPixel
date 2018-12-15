@@ -1,6 +1,6 @@
-// The screen takes a canvas, and stores it in a format that's easy to use for the engine
 class Screen {
 	constructor(target){ 
+		this.effects = [];
 		this.SetTarget(target);
 	}
 	
@@ -8,11 +8,27 @@ class Screen {
 		return new Screen(document.getElementById(id));
 	}
 
+	AddEffect(effect){
+		this.effects.push(effect);
+	}
+
+	ApplyEffects(args){
+		let args_copy = Object.assign({}, args);
+
+		for(let effect of this.effects){
+			args_copy = effect(args_copy);
+		}
+
+		return args_copy;
+	}
+
 	GetSection(x, y, width, height){
 		return new PartialScreen(this.canvas, x, y, x + width, y + height);
 	}
 
 	Clear(args){
+		args = this.ApplyEffects(args);
+
 		this.context.fillStyle = args.color;
 		this.context.fillRect(this.drawing_offset.x, this.drawing_offset.y, this.width, this.height);
 	}
@@ -35,6 +51,8 @@ class Screen {
 	}
 
 	DrawTexture(args) {
+		args = this.ApplyEffects(args);
+
 		let y = args.x + this.drawing_offset.x;
 		let x = args.y + this.drawing_offset.y;
 
@@ -49,6 +67,8 @@ class Screen {
 	}
 
 	DrawAnimation(args){
+		args = this.ApplyEffects(args);
+
 		x = args.x + this.drawing_offset.x;
 		y = args.y + this.drawing_offset.y;
 	
@@ -63,6 +83,8 @@ class Screen {
 	}
 
 	DrawAnimationController(args){
+		args = this.ApplyEffects(args);
+
 		if(args.controller.current_animation !== null){
 			args.animation = args.controller.current_animation;
 			return this.DrawAnimation(args);
@@ -71,6 +93,8 @@ class Screen {
 	}
 
 	DrawText(args) {
+		args = this.ApplyEffects(args);
+
 		this.context.font      = "font"  in args ? args.font  : "Arial 12px";
 		this.context.fillStyle = "color" in args ? args.color : "white";
 		this.context.fillText(args.text, args.x + this.drawing_offset.x, args.y + this.drawing_offset.y);
@@ -80,6 +104,8 @@ class Screen {
 	}
 
 	DrawRect(args){
+		args = this.ApplyEffects(args);
+
 		this.context.fillStyle = ("color" in args) ? args.color : "red";
 		this.context.fillRect(args.x + this.drawing_offset.x, args.y + this.drawing_offset.y, args.width, args.height);
 	
@@ -87,6 +113,8 @@ class Screen {
 	}
 
 	DrawDrawingSequence(args){
+		args = this.ApplyEffects(args);
+
 		let queue = args.sequence.queue;
 
 		for(let element of queue){
@@ -97,6 +125,8 @@ class Screen {
 	}
 
 	DrawCircle(args){
+		args = this.ApplyEffects(args);
+
 		this.context.fillStyle = "color" in args ? args.color : "red";
 		this.context.beginPath();
 		this.context.arc(args.x + this.drawing_offset.x, args.y + this.drawing_offset.y, args.radius, 0, Math.PI * 2);
@@ -106,6 +136,8 @@ class Screen {
 	}
 
 	DrawLine(args){
+		args = this.ApplyEffects(args);
+
 		// Set up the path
 		this.context.beginPath();
 		this.context.moveTo(args.x1 + this.drawing_offset.x, args.y1 + this.drawing_offset.y);
@@ -164,6 +196,8 @@ class PartialScreen extends Screen {
 	}
 
 	DrawRect(args){
+		args = this.ApplyEffects(args);
+
 		let left   = this.ClampX(args.x);
 		let right  = this.ClampX(args.x + args.width);
 		let top    = this.ClampY(args.y);
@@ -178,6 +212,8 @@ class PartialScreen extends Screen {
 		return this;
 	}
 	DrawAnimation(args){
+		args = this.ApplyEffects(args);
+
 		let drawingArgs = {
 			x: args.x,
 			y: args.y,
@@ -190,6 +226,8 @@ class PartialScreen extends Screen {
 		return this;
 	}
 	DrawTexture(args){
+		args = this.ApplyEffects(args);
+		
 		let width  = "width"  in args ? args.width  : texture.width;
 		let height = "height" in args ? args.height : texture.height;
 		
@@ -231,16 +269,19 @@ class DrawingSequence {
 			name: name,
 			args: args
 		});
+		return this;
 	}
 	Clear(args){
 		this.queue = [];
 		this._queue_func("Clear", args);
+		return this;
 	}
-	DrawTexture             (args){ this._queue_func("DrawTexture",             args); }
-	DrawAnimation           (args){ this._queue_func("DrawAnimation",           args); }
-	DrawAnimationController (args){ this._queue_func("DrawAnimationController", args); }
-	DrawRect                (args){ this._queue_func("DrawRect",                args); }
-	DrawText                (args){ this._queue_func("DrawText",                args); }
-	DrawCircle              (args){ this._queue_func("DrawCircle",              args); }
-	DrawLine                (args){ this._queue_func("DrawLine",                args); }
+	DrawTexture             (args){ return this._queue_func("DrawTexture",             args); }
+	DrawAnimation           (args){ return this._queue_func("DrawAnimation",           args); }
+	DrawAnimationController (args){ return this._queue_func("DrawAnimationController", args); }
+	DrawRect                (args){ return this._queue_func("DrawRect",                args); }
+	DrawText                (args){ return this._queue_func("DrawText",                args); }
+	DrawCircle              (args){ return this._queue_func("DrawCircle",              args); }
+	DrawLine                (args){ return this._queue_func("DrawLine",                args); }
+	DrawTilemap             (args){ return this._queue_func("DrawTilemap",             args); }
 }

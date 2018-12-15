@@ -1,8 +1,9 @@
 "use strict";
 
 let screen;
-let subsection;
+let drawseq;
 let cam;
+let minimap;
 let dirt;
 let tilemap;
 
@@ -20,8 +21,11 @@ window.onload = () => {
     Texture.LoadFromFile("dirt.png")
         .then(result => {
             screen = Screen.FromID('canvas');
-            subsection = new DrawingSequence(screen.width, screen.height);
-            cam = new Camera(screen, 0, 0, 20);
+            
+            drawseq = new DrawingSequence(screen.width, screen.height);
+            cam =     new Camera(screen, 0, 0, 20);
+            minimap = new Camera(screen.GetSection(screen.width - 40, 10, 30, 30), 0, 0, 3);
+
             dirt = new Animation(result.SplitIntoGrid({grid_size: {x: 2, y: 3}}), 2);
 
             frame();
@@ -31,7 +35,7 @@ window.onload = () => {
 function frame() {
     window.requestAnimationFrame(frame);
 
-    cam.Clear({ color: "black" })
+    drawseq.Clear({ color: "black" })
         .DrawTilemap({
             tilemap: tilemap, 
             DrawTile: (args) => {
@@ -44,12 +48,10 @@ function frame() {
         })
         .DrawRect({x:0,y:0,width:.5,height:.5,color: "cyan"})
         .DrawRect({x:4,y:3,width:.5,height:.5,color: "cyan"})
-        .DrawRect({x:6,y:2,width:.5,height:.5,color: "cyan"})
+        .DrawRect({x:6,y:2,width:.5,height:.5,color: "cyan"});
     
-    screen.DrawDrawingSequence({ sequence: subsection });
-
-    //dirt.Animate(0.025);
-    //cam.pos.x += 0.01
+    cam    .DrawDrawingSequence({ sequence: drawseq });
+    minimap.DrawDrawingSequence({ sequence: drawseq });
 }
 
 function keyPressed(evt){
@@ -73,7 +75,7 @@ function keyPressed(evt){
             cam.zoom /= 1.25;
             break;
         case "c":
-            screenshots.push(subsection.Clone());
+            screenshots.push(drawseq.Clone());
             break;
     }
 }

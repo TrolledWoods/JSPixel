@@ -107,6 +107,15 @@ class Camera {
 		}
 
 		return this;
+    }
+    DrawDrawingSequence(args){
+		let queue = args.sequence.queue;
+
+		for(let element of queue){
+			this[element.name](element.args);
+		}
+
+		return this;
 	}
     DrawTilemap(args){
         let size = this.zoom * args.tilemap.tile_scale;
