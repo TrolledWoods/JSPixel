@@ -1,7 +1,7 @@
 class Animation{
 	constructor(frames, fps){
 		this.frames = frames;
-		this.frame_delta_time = 1000 / fps;
+		this.frame_delta_time = 1 / fps;
 		this.timer = 0;
 		this.current_frame = 0;
 	}

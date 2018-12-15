@@ -1,29 +1,50 @@
-"use strict";
+"use strict"
 
-let screen;
-let subsection;
-let cam;
-let dirt;
+let screen
+let subsection
+let cam
+let dirt
+let red, full_red
+let tilemap;
 
 window.onload = () => {
-    Texture.LoadFromFile("dirt.png")
-    .then(result => {
-            dirt = result.GetArea(0, 0, 120, 120);
-            screen = Screen.FromID('canvas');
-            subsection = screen.GetSection(50, 50, 100, 100);
-            cam = new Camera(subsection, 0, 0, 20);
+    full_red = Texture.CreateSolid("red", 50, 50)
+    red = full_red.GetArea(5, 5, 40, 40)
+    tilemap = Tilemap.ParseList(
+        "###" + 
+        "#.." + 
+        "###", 
+        -1, -1, 1, 1, 
+        c => ({ "#": "red", ".": "white" })[c]);
+    console.log(tilemap);
 
-            frame();
-    });
+    red.GetScreen()
+        .DrawRect(10, 10, 50, 50, "blue")
+        .DrawRect(10, 20, 50, 50, "black");
+
+    Texture.LoadFromFile("dirt.png")
+        .then(result => {
+            screen = Screen.FromID('canvas')
+            subsection = screen.GetSection(50, 50, 100, 100)
+            cam = new Camera(screen, 0, 0, 20)
+            dirt = new Animation(result.SplitIntoGrid({grid_size: {x: 2, y: 3}}), 2);
+
+            frame()
+        });
 }
 
 function frame() {
     window.requestAnimationFrame(frame);
 
     screen.Clear("blue");
-    cam.Clear("black");
-    cam.DrawRect(0, 0, 1.5, 1.5, "red");
-    cam.DrawTexture(dirt, 0, 0, 1, 1);
+    
+    cam.Clear("black")
+        .DrawTilemap(tilemap, (screen, tile, world_pos, pos, size) => {
+            if(tile === null) return;
+            screen.DrawRect(pos.x, pos.y, size, size, tile);
+        })
+        .DrawRect(0, 0, 0.5, 0.5, "blue");
 
-    cam.pos.x += 0.01;
+    //dirt.Animate(0.025);
+    //cam.pos.x += 0.01
 }
