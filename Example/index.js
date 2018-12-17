@@ -7,9 +7,13 @@ let minimap;
 let dirt;
 let tilemap;
 
+let screen_shake;
+
 let screenshots = [];
 
 window.onload = () => {
+    screen_shake = new CreateEffect_ScreenShake();
+
     tilemap = new InfiniteTilemap(Tilemap.Create({
         min_x: -100, min_y: -100,
         max_x: 100, max_y: 100,
@@ -17,12 +21,13 @@ window.onload = () => {
             return args.pos.x % 4 == 0 || args.pos.y % 4 == 0 ? "red" : "blue";
         }
      }), 64, 64);
-    tilemap.SetTile({ x: 0, y: 0, tile: "black"});
+    tilemap.SetTile({ x: 0, y: 0, tile: "black" });
     tilemap.SetTile({ x: 0, y: 0, tile: "white" });
 
     Texture.LoadFromFile("dirt.png")
         .then(result => {
             screen = Screen.FromID('canvas');
+            screen.AddEffect(screen_shake);
             
             drawseq = new DrawingSequence(screen.width, screen.height);
             cam =     new Camera(screen, 0, 0, 20);
@@ -36,6 +41,7 @@ window.onload = () => {
 
 function frame() {
     window.requestAnimationFrame(frame);
+    screen.UpdateEffects();
 
     drawseq.Clear({ color: "black" })
         .DrawTilemap({

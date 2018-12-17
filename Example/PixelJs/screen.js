@@ -12,11 +12,18 @@ class Screen {
 		this.effects.push(effect);
 	}
 
+	UpdateEffects(){
+		for(let effect of this.effects){
+			if("frame" in effect)
+				effect.frame();
+		}
+	}
+
 	ApplyEffects(args){
 		let args_copy = Object.assign({}, args);
 
 		for(let effect of this.effects){
-			args_copy = effect(args_copy);
+			args_copy = effect.effect(args_copy);
 		}
 
 		return args_copy;
