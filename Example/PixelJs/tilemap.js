@@ -70,19 +70,19 @@ class Tilemap {
         return args.x>=this.x && args.x<this.x+this.width &&
                args.y>=this.y && args.y<this.y+this.height;
     }
-    GetIndex(args){
+    get_index(args){
         if(!this.IsInside(args)) return -1;
 
         return  (args.x-this.x) + (args.y-this.y) * this.width;
     }
     GetTile(args){
-        let index = this.GetIndex(args);
+        let index = this.get_index(args);
         if(index < 0) return null;
 
         return this.tiles[index];
     }
     SetTile(args){
-        let index = this.GetIndex(args);
+        let index = this.get_index(args);
         if(index < 0) return this;
 
         this.tiles[index] = tile;
@@ -93,5 +93,67 @@ class Tilemap {
     }
     CreateSetRelativeFunc(origin_x, origin_y){
         return (x, y, tile) => this.SetTile(origin_x + x, origin_y + y, tile);
+    }
+}
+
+class InfiniteTilemap extends Tilemap {
+    constructor(fallback, chunk_width, chunk_height){
+        super([], -Infinity, -Infinity, Infinity, Infinity);
+
+        this.fallback = fallback;
+        this.chunks = [];
+        this.chunk_width  = chunk_width;
+        this.chunk_height = chunk_height;
+    }
+    GetChunk(args){
+        for(let chunk of this.chunks){
+            if(chunk.x == args.x && chunk.y == args.y){
+                return chunk;
+            }
+        }
+
+        return null;
+    }
+    AddChunk(args){
+        let new_chunk = {
+            x: args.x,
+            y: args.y,
+            tiles: []
+        };
+        for(let oy = 0; oy < this.chunk_height; oy++){
+            for(let ox = 0; ox < this.chunk_width; ox++){
+                new_chunk.tiles.push(this.fallback.GetTile({
+                    x: ox + args.x*this.chunk_width, 
+                    y: oy + args.y*this.chunk_height
+                }));
+            }
+        }
+        this.chunks.push(new_chunk);
+        return new_chunk;
+    }
+    GetTile(args){
+        let chunk_pos = {
+            x: Math.floor(1.0 * args.x / this.chunk_width),
+            y: Math.floor(1.0 * args.y / this.chunk_height)
+        };
+        let chunk = this.GetChunk(chunk_pos);
+        if(chunk === null) return this.fallback.GetTile(args);
+
+        let local_x = args.x - chunk_pos.x * this.chunk_width;
+        let local_y = args.y - chunk_pos.y * this.chunk_height;
+        return chunk.tiles[local_x + local_y * this.chunk_width];
+    }
+    SetTile(args){
+        let chunk_pos = {
+            x: Math.floor(1.0 * args.x / this.chunk_width),
+            y: Math.floor(1.0 * args.y / this.chunk_height)
+        };
+        let chunk = this.GetChunk(chunk_pos);
+        if(chunk === null)
+            chunk = this.AddChunk(chunk_pos);
+
+        let local_x = args.x - chunk_pos.x * this.chunk_width;
+        let local_y = args.y - chunk_pos.y * this.chunk_height;
+        chunk.tiles[local_x + local_y * this.chunk_width] = args.tile;
     }
 }

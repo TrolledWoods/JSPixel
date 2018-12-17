@@ -3,6 +3,7 @@ class Camera {
         this.screen = screen;
         this.pos = { x: x, y: y };
         this.zoom = zoom;
+        this.effects = [];
     }
 
     static FromID(args){
@@ -23,6 +24,20 @@ class Camera {
         );
     }
 
+    AddEffect(effect){
+        this.effects.push(effect);
+    }
+
+    ApplyEffects(args){
+		let args_copy = Object.assign({}, args);
+
+		for(let effect of this.effects){
+			args_copy = effect(args_copy);
+		}
+
+		return args_copy;
+	}
+
     WorldToScreen(world_pos){
         return {
             x: (world_pos.x - this.pos.x) * this.zoom + this.screen.width/2,
@@ -37,11 +52,15 @@ class Camera {
         };
     }
     Clear(args){
+        args = this.ApplyEffects(args);
+
         this.screen.Clear(args);
 
         return this;
     }
     DrawRect(args){
+        args = this.ApplyEffects(args);
+
         let pos = this.WorldToScreen({ x: args.x, y: args.y});
         let width = args.width * this.zoom;
         let height = args.height * this.zoom;
@@ -54,6 +73,8 @@ class Camera {
         return this;
     }
     DrawGraphic(args){
+        args = this.ApplyEffects(args);
+
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
         let width  = args.width  * this.zoom;
         let height = args.height * this.zoom;
@@ -64,6 +85,8 @@ class Camera {
         });
     }
     DrawTexture(args){
+        args = this.ApplyEffects(args);
+
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
         let width  = args.width  * this.zoom;
         let height = args.height * this.zoom;
@@ -76,6 +99,8 @@ class Camera {
         return this;
     }
     DrawAnimation(args){
+        args = this.ApplyEffects(args);
+
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
         let width  = args.width  * this.zoom;
         let height = args.height * this.zoom;
@@ -88,6 +113,8 @@ class Camera {
         return this;
     }
     DrawAnimationController(args){
+        args = this.ApplyEffects(args);
+
         let pos = this.WorldToScreen({ x: args.x, y: args.y });
         let width  = args.width  * this.zoom;
         let height = args.height * this.zoom;
@@ -100,6 +127,8 @@ class Camera {
         return this;
     }
     DrawDrawingSequence(args){
+        args = this.ApplyEffects(args);
+
 		let queue = args.sequence.queue;
 
 		for(let element of queue){
@@ -109,6 +138,8 @@ class Camera {
 		return this;
     }
     DrawDrawingSequence(args){
+        args = this.ApplyEffects(args);
+
 		let queue = args.sequence.queue;
 
 		for(let element of queue){
@@ -118,6 +149,8 @@ class Camera {
 		return this;
 	}
     DrawTilemap(args){
+        args = this.ApplyEffects(args);
+
         let size = this.zoom * args.tilemap.tile_scale;
         let middle = args.tilemap.WorldToTilemap(this.ScreenToWorld({x:this.screen.width/2,y:this.screen.height/2}));
         let width = Math.ceil(this.screen.width / (2 * size));
@@ -130,15 +163,18 @@ class Camera {
         for(let x = Math.floor(dl.x); x <= Math.ceil(ur.x); x++){
             let pos_y = Math.floor(origin.y);
             for(let y = Math.floor(dl.y); y <= Math.ceil(ur.y); y++){
-                args.DrawTile({
+                let fargs = {
                     screen: this.screen, 
                     tile: args.tilemap.GetTile({ x: x, y: y }), 
                     tile_pos: { x: x, y: y },
-                    pos: { x: pos_x - size / 2, y: pos_y - size / 2 },
+                    x: pos_x - size / 2, 
+                    y: pos_y - size / 2,
                     size: size + 1,
                     width: size + 1,
                     height: size + 1
-                });
+                }
+                args = this.ApplyEffects(args);
+                args.DrawTile(fargs);
                 pos_y -= size;
             }
             pos_x += size;

@@ -10,13 +10,15 @@ let tilemap;
 let screenshots = [];
 
 window.onload = () => {
-    tilemap = Tilemap.Create({
+    tilemap = new InfiniteTilemap(Tilemap.Create({
         min_x: -100, min_y: -100,
         max_x: 100, max_y: 100,
         MappingFunc: args => {
-            return args.pos.x % 4 == 0 || args.pos.y % 4 == 0 ? '#' : '.';
+            return args.pos.x % 4 == 0 || args.pos.y % 4 == 0 ? "red" : "blue";
         }
-     });
+     }), 64, 64);
+    tilemap.SetTile({ x: 0, y: 0, tile: "black"});
+    tilemap.SetTile({ x: 0, y: 0, tile: "white" });
 
     Texture.LoadFromFile("dirt.png")
         .then(result => {
@@ -40,9 +42,9 @@ function frame() {
             tilemap: tilemap, 
             DrawTile: (args) => {
                 args.screen.DrawRect({
-                    x: args.pos.x, y: args.pos.y,
+                    x: args.x, y: args.y,
                     width: args.size, height: args.size,
-                    color: args.tile === '#' ? "red" : "blue" 
+                    color: args.tile
                 });
             }
         })

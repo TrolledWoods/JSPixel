@@ -260,11 +260,26 @@ class DrawingSequence {
 		this.width = width;
 		this.height = height;
 		this.queue = queue;
+		this.effects = [];
 	}
 	Clone() {
 		return new DrawingSequence(this.width, this.height, this.queue);
 	}
+	AddEffect(effect){
+		this.effects.push(effect);
+	}
+	ApplyEffects(args){
+		let args_copy = Object.assign({}, args);
+
+		for(let effect of this.effects){
+			args_copy = effect(args_copy);
+		}
+
+		return args_copy;
+	}
 	_queue_func(name, args){
+        args = this.ApplyEffects(args);
+
 		this.queue.push({
 			name: name,
 			args: args
