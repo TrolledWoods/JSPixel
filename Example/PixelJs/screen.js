@@ -136,7 +136,7 @@ class Screen {
 
 		this.context.fillStyle = "color" in args ? args.color : "red";
 		this.context.beginPath();
-		this.context.arc(args.x + this.drawing_offset.x, args.y + this.drawing_offset.y, args.radius, 0, Math.PI * 2);
+		this.context.arc(args.x + this.drawing_offset.x, args.y + this.drawing_offset.y, args.r, 0, Math.PI * 2);
 		this.context.fill();
 
 		return this;

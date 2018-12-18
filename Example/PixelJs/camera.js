@@ -25,14 +25,21 @@ class Camera {
     }
 
     AddEffect(effect){
-        this.effects.push(effect);
-    }
+		this.effects.push(effect);
+	}
 
-    ApplyEffects(args){
+	UpdateEffects(){
+		for(let effect of this.effects){
+			if("frame" in effect)
+				effect.frame();
+		}
+	}
+
+	ApplyEffects(args){
 		let args_copy = Object.assign({}, args);
 
 		for(let effect of this.effects){
-			args_copy = effect(args_copy);
+			args_copy = effect.effect(args_copy);
 		}
 
 		return args_copy;
@@ -68,6 +75,18 @@ class Camera {
             x: pos.x - width / 2, 
             y: pos.y - height / 2, 
             width: width, height: height, 
+            color: "color" in args ? args.color : "red" });
+
+        return this;
+    }
+    DrawCircle(args){
+        args = this.ApplyEffects(args);
+
+        let pos = this.WorldToScreen({ x: args.x, y: args.y});
+        this.screen.DrawCircle({ 
+            x: pos.x, 
+            y: pos.y, 
+            r: args.r * this.zoom,
             color: "color" in args ? args.color : "red" });
 
         return this;
@@ -137,6 +156,22 @@ class Camera {
 
 		return this;
     }
+    /*
+     * -- ARGUMENTS --
+     * handler: the particle handler that is rendered  
+     */
+    DrawParticleHandler(args){
+        let handler = args.handler;
+
+        for(let particle of handler.particles) {
+            particle.type.render({
+                data: particle.data,
+                screen: this
+            });
+        }
+
+        return this;
+    }
     DrawDrawingSequence(args){
         args = this.ApplyEffects(args);
 
@@ -173,7 +208,7 @@ class Camera {
                     width: size + 1,
                     height: size + 1
                 }
-                args = this.ApplyEffects(args);
+                fargs = this.ApplyEffects(fargs);
                 args.DrawTile(fargs);
                 pos_y -= size;
             }

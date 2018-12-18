@@ -101,6 +101,7 @@ class InfiniteTilemap extends Tilemap {
         super([], -Infinity, -Infinity, Infinity, Infinity);
 
         this.fallback = fallback;
+        this.tile_scale = fallback.tile_scale;
         this.chunks = [];
         this.chunk_width  = chunk_width;
         this.chunk_height = chunk_height;

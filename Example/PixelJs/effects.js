@@ -29,7 +29,7 @@ function CreateEffect_ScreenShake(){
 
     return {
         frame: _ => {
-            shaking *= 0.99;
+            shaking *= 0.95;
         },
         effect: CreateEffect_Random({ mag: _ => shaking }).effect,
         Shake: intensity => {
